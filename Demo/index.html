@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>mytest</title>
+    <script src="http://cdn.bootcss.com/jquery/2.1.4/jquery.min.js"></script>
+    <script type="text/javascript" src="./../PhonePhotoUpload.js"></script>
+    <script type="text/javascript">
+    $(document).ready(function($){
+        $(".content").PhonePhotoUpload({
+            remoteUrl:"/PhonePhotoUpload/Demo/upload_server.php",//设置图片上传路径
+            /* redirectUrl:'',//设置上传完成后的跳转路径
+			ContentColor:'black',//设置上传模块的背景色
+			IconColor:"#999",//设置添加与删除图标的颜色
+			BorderColor:"#efefef",//设置添加与删除图标以及图片的边框颜色
+			ButtonColor:"#333",//设置上传按钮的背景颜色
+			BtnFontColor:"white",//设置上传按钮的字体颜色
+        	ImgSize:'500px',//设置图片压缩后的宽度
+        	PicCount:'10',//设置上传图片的限制数量*/
+        });
+    });
+        
+    </script>
+</head>
+<body style="margin:0;">
+
+
+<div class="content"></div> 
+
+
+
+
+</body>
+</html>
