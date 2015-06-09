@@ -9,7 +9,7 @@ jQuery.fn.extend({
 						BorderColor:"#eee",//设置添加与删除图标以及图片的边框颜色
 						ButtonColor:"orange",//设置上传按钮的背景颜色
 						BtnFontColor:"#eee",//设置上传按钮的字体颜色
-						ImgSize:'300px',//设置图片压缩后的宽度
+						ImgSize:'300',//设置图片压缩后的宽度
 						PicCount:'9',//设置上传图片的限制数量
 				};
 				
@@ -357,7 +357,7 @@ jQuery.fn.extend({
 					
 					$('#PhonePhotoUpload_stage'+plug_index+' img').each(function(i){
 						
-						$("#PhonePhotoUpload_tmpImgs"+plug_index).append('<img id="PhonePhotoUpload_tmpImgs'+plug_index+'_img'+i+'" src="'+this.src+'" style="max-width:'+defaults.ImgSize+'">');
+						$("#PhonePhotoUpload_tmpImgs"+plug_index).append('<img id="PhonePhotoUpload_tmpImgs'+plug_index+'_img'+i+'" src="'+this.src+'" style="max-width:'+defaults.ImgSize+'px;">');
 						
 						$("#PhonePhotoUpload_tmpImgs"+plug_index+"_img"+i).bind('load',function(){
 							
