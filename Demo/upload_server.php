@@ -1,6 +1,6 @@
 <?php 
 if ($_SERVER['REQUEST_METHOD'] == "POST"){
-	
+
 	$ip = $_SERVER["REMOTE_ADDR"];
 	$time = date("Y-m-d H:i:s", time());
 	$from = '';
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST"){
 	
 	
 	
-	echo json_encode( array('status'=>'success'));
-	
+	echo json_encode( array('status'=>'success'));*/
+
 	exit();
 }

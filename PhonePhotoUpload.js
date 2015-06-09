@@ -402,8 +402,9 @@ jQuery.fn.extend({
 							}else{
 								alert(data.msg);
 							}
+							
 
-						});
+						},"json");
 					};
 
 					
