@@ -389,18 +389,21 @@ jQuery.fn.extend({
 						});
 						
 						$.post(defaults.remoteUrl, rsData,function(data){
-
+							
 							if (data.status == "success"){
 								//上传成功
-								alert('上传成功'); 
+								if (data.msg) alert(data.msg);
+								else alert('上传成功');
 								//隐藏上传显示框
 								PhonePhotoUpload_Status_toggle(plug_index,false);
 								//页面跳转
 								location.href=defaults.redirectUrl;
 							}else if(data.status == "error"){
-								alert(data.msg);
+								if (data.msg) alert(data.msg);
+								else alert('上传失败！');
 							}else{
-								alert(data.msg);
+								if (data.msg) alert(data.msg);
+								else alert('服务器返回了未知状态，无法判断上传结果！');
 							}
 							
 
