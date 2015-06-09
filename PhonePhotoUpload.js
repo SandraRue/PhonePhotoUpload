@@ -382,14 +382,14 @@ jQuery.fn.extend({
 					var upload_fun = function(){
 						
 						//提示上传成功
-						var rsData = new Array();
+						var rsData = {};
 						
 						$("#PhonePhotoUpload_RS"+plug_index+" img").each(function(i){
-							rsData[i] = this.src;
+							eval('rsData.image'+i+'="'+this.src+'"');
 						});
 						
-						$.post(defaults.remoteUrl, { images: rsData },function(data){
-							//
+						$.post(defaults.remoteUrl, rsData,function(data){
+
 							if (data.status == "success"){
 								//上传成功
 								alert('上传成功'); 
@@ -397,9 +397,13 @@ jQuery.fn.extend({
 								PhonePhotoUpload_Status_toggle(plug_index,false);
 								//页面跳转
 								location.href=defaults.redirectUrl;
+							}else if(data.status == "error"){
+								alert(data.msg);
+							}else{
+								alert(data.msg);
 							}
 
-						},"json");
+						});
 					};
 
 					

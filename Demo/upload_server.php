@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST"){
 	mkdir($dirname);
 	
 	//保存图片数据为文件
-	foreach ($_POST['images'] as $key=>$image ){
+	foreach ($_POST as $key=>$image ){
 		
 		$data = explode(",", $image);
 		$data = base64_decode($data[1]);
