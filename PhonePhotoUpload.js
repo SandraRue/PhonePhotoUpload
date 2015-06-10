@@ -47,7 +47,7 @@ jQuery.fn.extend({
 							                         '<div style="height:30px;width:30px;float:left;margin:15px;background:'+ defaults.IconColor +';">'+
 							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';float:left;margin:0;"></div>'+
 							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;float:right;"></div>'+
-							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;display:inline-block;margin-top:2px;"></div>'+
+							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;float:left;margin-top:2px;"></div>'+
 							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;margin-top:2px;float:right;"></div>'+
 							                         '</div>'+
 						                         '</div>'+
