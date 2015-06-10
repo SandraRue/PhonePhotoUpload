@@ -9,6 +9,7 @@ jQuery.fn.extend({
 						BorderColor:"#eee",//设置添加与删除图标以及图片的边框颜色
 						ButtonColor:"orange",//设置上传按钮的背景颜色
 						BtnFontColor:"#eee",//设置上传按钮的字体颜色
+						BtnText:"上传已选择的文件",//设置上传按钮的文字
 						ImgSize:'300',//设置图片压缩后的宽度
 						PicCount:'9',//设置上传图片的限制数量
 				};
@@ -76,7 +77,7 @@ jQuery.fn.extend({
 						//初始化上传按钮
 						
 						var HTML_UploadBtn = '<div id="PhonePhotoUpload_UploadBtn_wrap'+ i + '">'+
-						                          '<div id="PhonePhotoUpload_UploadBtn'+ i + '" style="margin-top:5px;padding:8px 0;width:100%;text-align:center;background:'+defaults.ButtonColor+';color:'+defaults.BtnFontColor+';border-radius:2px;">上传已选择的文件</div>'+
+						                          '<div id="PhonePhotoUpload_UploadBtn'+ i + '" style="margin-top:5px;padding:8px 0;width:100%;text-align:center;background:'+defaults.ButtonColor+';color:'+defaults.BtnFontColor+';border-radius:2px;">'+defaults.BtnText+'</div>'+
 											 '</div>';
 						
 						//初始化图片压缩操作
