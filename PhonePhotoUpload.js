@@ -153,23 +153,32 @@ jQuery.fn.extend({
 				 * 点击上传处理函数
 				 */
 				var PhonePhotoUpload_UploadBtn_limit=function(e){
+					
 					//判断加减按钮是否显示，不显示则表示正在删除状态中，则不运行以下上传操作
 					if($('#PhonePhotoUpload_OperaBtn'+e.data).css("display")=="block"){
 						//弹出确认框，确认是否上传图片
+						
+						PhonePhotoUpload_Status_toggle(e.data,true);
+						
 						var PhonePhotoUpload_confirm=confirm("是否上传所选图片!");
+						
 						if(PhonePhotoUpload_confirm==true){
 							//判断没图片的情况
 							if (PhonePhotoUpload_CheckImageCountOfStage(e.data) < 1){
 								alert("还没图片");
+								PhonePhotoUpload_Status_toggle(e.data,false);
 							//判断图片张数大于所限制张数的情况
 							}else if (PhonePhotoUpload_CheckImageCountOfStage(e.data) > defaults.PicCount){
 								alert('一次最多只能上传'+defaults.PicCount+'张图片');
+								PhonePhotoUpload_Status_toggle(e.data,false);
 							//有图片并且小于或等于所限制张数时，执行上传操作
 							}else{
-								PhonePhotoUpload_Status_toggle(e.data,true);
+								
 								// 压缩、上传图片
 								PhonePhotoUpload_UploadStageImages(e.data);
 							}
+						}else{
+							PhonePhotoUpload_Status_toggle(e.data,false);
 						}
 					}
 					
