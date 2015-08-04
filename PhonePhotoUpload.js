@@ -21,12 +21,24 @@ jQuery.fn.extend({
 					}
 				});
 				
+				
+				/**
+				 * 初始化全局变量
+				 */
+				var states = new Array(this.length);
+				
 				/**
 				 * 初始化界面
 				 */
 				var init = function(divs) {
 
 					divs.each(function(i) {
+						
+						states[i] = {
+							UploadSuccessed:false,
+							ProgressBarAnimationDone:false,
+							ProgressBarAnimationRuning:false
+							};
 						
 						var plugin_container = this;
 						
@@ -86,7 +98,7 @@ jQuery.fn.extend({
 				
 						//初始化正在上传提示
 						
-						var HTML_Upload_status='<div id="PhonePhotoUpload_Status'+i+'" style="display:none;position:fixed;background: rgba(0, 0, 0, 0.6);width:100%;text-align:center;font-weight:bold;color:white;">图片正在上传中，请稍候...</div>';
+						var HTML_Upload_status='<div id="PhonePhotoUpload_Status'+i+'" style="display:none;position:fixed;background: rgba(0, 0, 0, 0.6);width:100%;text-align:center;font-weight:bold;color:white;"></div>';
 						
 						// 组装HTML
 
@@ -190,16 +202,92 @@ jQuery.fn.extend({
 				 */
 				var PhonePhotoUpload_Status_toggle = function( plug_index , status ){
 					if(status){
+						
+						$('#PhonePhotoUpload_Status'+plug_index).html('图片正在准备上传，请稍候...');
+						
 						//未上传成功时显示上传状态
 						$('#PhonePhotoUpload_Status'+plug_index).css("display","block");
 						//设置提示语的高度与行高
 						var PhonePhotoUpload_Status_height=$('#PhonePhotoUpload'+plug_index).height();
 						$('#PhonePhotoUpload_Status'+plug_index).css("height",PhonePhotoUpload_Status_height+"px");
 						$('#PhonePhotoUpload_Status'+plug_index).css("line-height",PhonePhotoUpload_Status_height+"px");
+						
+						// 开启进度条
+						PhonePhotoUpload_Status_ProgressBar( plug_index );
+						
 					}else{
+						
 						//上传完成时提示框消失
 						$('#PhonePhotoUpload_Status'+plug_index).css("display","none");
 					}
+				}
+				
+				/**
+				 * 启动进度条
+				 */
+				var PhonePhotoUpload_Status_ProgressBar = function( plug_index ){
+
+						// 动画已经在运行，不必重复操作
+						if (states[plug_index].ProgressBarAnimationRuning) return;
+						else{
+							
+							var ProgressBar_html  = '<div id="PhonePhotoUpload_Status_ProgressBar'+plug_index+'">';
+								ProgressBar_html += 	'<div id="PhonePhotoUpload_Status_ProgressBar_Percent'+plug_index+'" style="line-height:30px;text-align:center;font-size:16px;">';
+								ProgressBar_html += 		'<span id="PhonePhotoUpload_Status_ProgressBar_Percent_Number'+plug_index+'">0%</span>';
+								ProgressBar_html += 	'</div>';
+								ProgressBar_html += 	'<div id="PhonePhotoUpload_Status_ProgressBar_BarWrap'+plug_index+'" style="width:100%; background-color:#FFF;">';
+								ProgressBar_html += 		'<div id="PhonePhotoUpload_Status_ProgressBar_BarState'+plug_index+'" style="width:0%; background-color:green; height:30px;"></div>';
+								ProgressBar_html += 	'</div>';
+								ProgressBar_html += 	'<div id="PhonePhotoUpload_Status_ProgressBar_MSG'+plug_index+'" style="line-height:30px;text-align:center;font-size:16px;"></div>';
+								ProgressBar_html += '</div>';
+							
+							$('#PhonePhotoUpload_Status'+plug_index).html(ProgressBar_html);
+							
+							// 启动虚拟进度
+							var sync_percent_number = function(){
+										
+										var percent = 0;
+										
+										var bar = parseInt($("#PhonePhotoUpload_Status_ProgressBar_BarState"+plug_index).width());
+										var wrap = parseInt($("#PhonePhotoUpload_Status_ProgressBar_BarWrap"+plug_index).width());
+										percent = parseInt( (bar / wrap)*100 );
+										
+										$("#PhonePhotoUpload_Status_ProgressBar_Percent_Number"+plug_index).html(percent+"%");
+								};
+							var sync_percent_number_IntervalID = setInterval(sync_percent_number,200);
+							
+							
+							var animation_speed = (PhonePhotoUpload_CheckImageCountOfStage(plug_index)*1000);
+							console.log(animation_speed);
+							
+							$("#PhonePhotoUpload_Status_ProgressBar_BarState"+plug_index).animate({width:"67%"},animation_speed,'swing',function(){
+								
+								// 启动动画完成,进度显示为60%,轮询真实上传状态，如成功，则把进度显示为100%
+								var get_real_upload_state_IntervalID = null;
+								var get_real_upload_state_runcount = 0;
+								var get_real_upload_state = function(){
+									get_real_upload_state_runcount++;
+									if (states[plug_index].UploadSuccessed){ //真实上传状态
+										$("#PhonePhotoUpload_Status_ProgressBar_BarState"+plug_index).animate({width:"100%"},1000,'swing',function(){
+											// 标示动画100%完成状态
+											clearInterval(get_real_upload_state_IntervalID);
+											clearInterval(sync_percent_number_IntervalID);
+											$('#PhonePhotoUpload_Status'+plug_index).html('上传完成！');
+											states[plug_index].ProgressBarAnimationDone = true;
+										});
+									}else{
+										var dot_length = get_real_upload_state_runcount%6;
+										var dot_str = '.';
+										for (var i = 0; i < dot_length; i++) dot_str += '.';
+										
+										if (get_real_upload_state_runcount > 15) $("#PhonePhotoUpload_Status_ProgressBar_MSG"+plug_index).html("您当前网速比较慢，请耐心等候"+dot_str);
+									}
+								};
+								get_real_upload_state_IntervalID = setInterval(get_real_upload_state,200);
+							});
+							
+						}
+					
 				}
 				
 				
@@ -399,15 +487,34 @@ jQuery.fn.extend({
 						});
 						
 						$.post(defaults.remoteUrl, rsData,function(data){
-							
+							console.log('success');
 							if (data.status == "success"){
 								//上传成功
-								if (data.msg) alert(data.msg);
-								else alert('上传成功');
-								//隐藏上传显示框
-								PhonePhotoUpload_Status_toggle(plug_index,false);
-								//页面跳转
-								location.href=defaults.redirectUrl;
+								
+								// 标示全局上传成功状态
+								states[plug_index].UploadSuccessed = true;
+								
+								// 轮询动画完成状态
+								var checkProBarAnimationState_IntervalID = null;
+								var checkProBarAnimationState = function(){
+										if (states[plug_index].ProgressBarAnimationDone){
+											
+											clearInterval(checkProBarAnimationState_IntervalID);
+											
+											if (data.msg) alert(data.msg);
+											else alert('上传成功');
+											
+											//隐藏上传显示框
+											PhonePhotoUpload_Status_toggle(plug_index,false);
+											
+											//页面跳转
+											location.href=defaults.redirectUrl;
+											
+										}
+									};
+								checkProBarAnimationState_IntervalID = setInterval(checkProBarAnimationState,200);
+								
+								
 							}else if(data.status == "error"){
 								if (data.msg) alert(data.msg);
 								else alert('上传失败！');
