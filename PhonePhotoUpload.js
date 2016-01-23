@@ -1,236 +1,437 @@
 jQuery.fn.extend({
-			PhonePhotoUpload : function(config) {
-				//设置默认值
-				var defaults={
-			            remoteUrl:window.location.href,//设置图片上传路径
-			            redirectUrl:window.location.href,//设置上传完成后的跳转路径
-						ContentColor:'white',//设置上传模块的背景色
-						IconColor:"#999",//设置添加与删除图标的颜色
-						BorderColor:"#eee",//设置添加与删除图标以及图片的边框颜色
-						ButtonColor:"orange",//设置上传按钮的背景颜色
-						BtnFontColor:"#eee",//设置上传按钮的字体颜色
-						BtnText:"上传已选择的文件",//设置上传按钮的文字
-						ImgSize:'300',//设置图片压缩后的宽度
-						PicCount:'9',//设置上传图片的限制数量
-						GetUrls:null, // 设置上传完成后要处理已上传图片URLs的函数
+	
+	PhonePhotoUpload : function(config) {
+		
+		//设置默认值
+		var defaults={
+	            remoteUrl:window.location.href,//设置图片上传路径
+	            redirectUrl:window.location.href,//设置上传完成后的跳转路径
+				ContentColor:'white',//设置上传模块的背景色
+				IconColor:"#999",//设置添加与删除图标的颜色
+				BorderColor:"#eee",//设置添加与删除图标以及图片的边框颜色
+				ButtonColor:"orange",//设置上传按钮的背景颜色
+				BtnFontColor:"#eee",//设置上传按钮的字体颜色
+				BtnText:"上传已选择的文件",//设置上传按钮的文字
+				ImgSize:'300',//设置图片压缩后的宽度
+				PicCount:'9',//设置上传图片的限制数量
+				GetUrls:null, // 设置上传完成后要处理已上传图片URLs的函数
+		};
+				
+		//页面传值，覆盖默认值
+		$.each(config,function(k,v){
+			
+			if (v != undefined){
+				
+				switch(k){
+					case 'remoteUrl':
+						defaults.remoteUrl = v;
+						break;
+					case 'redirectUrl':
+						defaults.redirectUrl = v;
+						break;
+					case 'ContentColor':
+						defaults.ContentColor = v;
+						break;
+					case 'IconColor':
+						defaults.IconColor = v;
+						break;
+					case 'BorderColor':
+						defaults.BorderColor = v;
+						break;
+					case 'ButtonColor':
+						defaults.ButtonColor = v;
+						break;
+					case 'BtnFontColor':
+						defaults.BtnFontColor = v;
+						break;
+					case 'BtnText':
+						defaults.BtnText = v;
+						break;
+					case 'ImgSize':
+						defaults.ImgSize = v;
+						break;
+					case 'PicCount':
+						defaults.PicCount = v;
+						break;
+					case 'GetUrls':
+						defaults.GetUrls = v;
+						break;
+				}
+			}
+		});
+				
+				
+		/**
+		 * 初始化全局变量
+		 */
+		var states = new Array(this.length); // this.length 是要生成的 控件数,states用于存放各控件的数据
+				
+		/**
+		 * 初始化界面
+		 */
+		var init = function(divs) { // divs 是控件容器div集，此变量是上面this.length的this，由后面调用init(this)时传进来
+
+			divs.each(function(i) { // i是控件容器在容器集中的索引数字
+				
+				// 当前控件的状态数据，在后面控件运行时，这些值会被改变
+				states[i] = {
+					UploadSuccessed:false, 				// 上传是否已经成功完成
+					ProgressBarAnimationDone:false,		// 进度条动画是否已播放完成
+					ProgressBarAnimationRuning:false	// 进度条动画是否正在播放
 				};
 				
-				//页面传值，覆盖默认值
-				$.each(config,function(k,v){
-					if (v != undefined){
+				// 当前控件容器，注意此this不同上面this.length的this
+				var plugin_container = this;
+				
+				// 给当前容器一个唯一的id值，以便后面调用
+				$(plugin_container).attr("id","PhonePhotoUpload"+i);
+				
+				// 设置容器的背景颜色
+				$(plugin_container).css("background",defaults.ContentColor);
+
+				
+				
+				/**************************
+				 * 从这里开始组装控件的HTML **
+				 *************************/
+				
+				// 图片舞台，用于显示已选择的图片
+				var HTML_ImageStatus = '<div id="PhonePhotoUpload_stage'+ i + '" style="overflow:hidden;"></div>';
 						
-							switch(k){
-								case 'remoteUrl':
-									defaults.remoteUrl = v;
-									break;
-								case 'redirectUrl':
-									defaults.redirectUrl = v;
-									break;
-								case 'ContentColor':
-									defaults.ContentColor = v;
-									break;
-								case 'IconColor':
-									defaults.IconColor = v;
-									break;
-								case 'BorderColor':
-									defaults.BorderColor = v;
-									break;
-								case 'ButtonColor':
-									defaults.ButtonColor = v;
-									break;
-								case 'BtnFontColor':
-									defaults.BtnFontColor = v;
-									break;
-								case 'BtnText':
-									defaults.BtnText = v;
-									break;
-								case 'ImgSize':
-									defaults.ImgSize = v;
-									break;
-								case 'PicCount':
-									defaults.PicCount = v;
-									break;
-								case 'GetUrls':
-									defaults.GetUrls = v;
-									break;
-							}
-						}
+						
+				// 添加删除操作按钮,纯HTML+CSS拼接 "+" "-" 图标
+				var HTML_OperaBtn = '<div id="PhonePhotoUpload_OperaBtn'+ i + '" style="width:132px; height:64px; overflow:hidden;padding-bottom:2px;">' + 
+				                         '<div id="PhonePhotoUpload_OperaBtn_Add'+ i + '" style="height:60px;width:60px;float:left;margin:2px;border:1px solid '+defaults.BorderColor+';background:'+ defaults.ContentColor +';">'+
+					                         '<div style="height:30px;width:30px;float:left;margin:15px;background:'+ defaults.IconColor +';">'+
+					                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';float:left;margin:0;"></div>'+
+					                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;float:right;"></div>'+
+					                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;float:left;margin-top:2px;"></div>'+
+					                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;margin-top:2px;float:right;"></div>'+
+					                         '</div>'+
+				                         '</div>'+
+				                         '<div id="PhonePhotoUpload_OperaBtn_Remove'+ i + '" style="height:60px;width:60px;display:none;margin:2px;border:1px solid '+defaults.BorderColor+';float:right;">'+
+					                         '<div style="height:30px;width:30px;margin:15px;">'+
+					                         	'<div style="height:2px;width:30px;background:'+defaults.IconColor+';margin-top:29px;"></div>'+
+					                         '</div>'+
+				                         '</div>'+
+				                    '</div>';
+						
+				// 点击添加图片时，显示的命令菜单：单选，多选，还是拍照
+				var HTML_CMenu = '<div id="PhonePhotoUpload_CMenu'+ i + '" style="display:none;position:fixed;top:0;left:0;background:white;width:100%;height:100%;background: rgba(0, 0, 0, 0.6);text-align:center;">' + 
+				 				 		'<span id="PhonePhotoUpload_CMenu_multiple_btn' + i + '"  style="padding:0 5px;font-size:14px;border:none;background:white;line-height:35px;'+
+				 				 																		'border:1px solid #eee;margin:5px;display: inline-block;margin-top:100px;border-radius:2px;">从相册添加多张图片</span>'+
+				 				 		'<span id="PhonePhotoUpload_CMenu_single_btn'+ i + '"  style="padding:0 5px;font-size:14px;border:none;background:white;line-height:35px;'+
+				 				 																	 'border:1px solid #eee;margin:5px;display: inline-block;margin-top:100px;border-radius:2px;">拍照或添加单张图片</span>'+
+				                 '</div>';
+						
+				// 两个html原生input控件，用于触发浏览器的选择文件对话框
+				var HTML_InputControls = '<div id="PhonePhotoUpload_InputControls'+ i + '" style="display:none">'+
+												'<input type="file" multiple="multiple" id="PhonePhotoUpload_InputControls_multiple_selector'+ i+ '">'+
+												'<input type="file" id="PhonePhotoUpload_InputControls_single_selector'+ i + '">'+
+										 '</div>';
+						
+				// 上传按钮，当用户选择好图片后，点击以把它们上传到服务器
+				var HTML_UploadBtn = '<div id="PhonePhotoUpload_UploadBtn_wrap'+ i + '">'+
+				                          '<div id="PhonePhotoUpload_UploadBtn'+ i + '" style="margin-top:5px;padding:8px 0;width:100%;text-align:center;background:'+defaults.ButtonColor+';color:'+defaults.BtnFontColor+';border-radius:2px;">'+defaults.BtnText+'</div>'+
+									 '</div>';
+						
+				// 用于压缩图片的Canvas容器
+				var HTML_RS = '<div style="width:0px;height:0px;overflow:hidden;"><div id="PhonePhotoUpload_tmpImgs'+ i + '"></div><div id="PhonePhotoUpload_Canvases'+ i + '"></div><div id="PhonePhotoUpload_RS'+ i + '"></div></div>';
+				
+				// 用于显示上传状态的容器
+				var HTML_Upload_status='<div id="PhonePhotoUpload_Status'+i+'" style="display:none;position:fixed;background: rgba(0, 0, 0, 0.6);width:100%;text-align:center;font-weight:bold;color:white;"></div>';
+						
+				// 组装所有HTML
+				$(plugin_container).append(HTML_Upload_status);
+				$(plugin_container).append(HTML_ImageStatus);
+				$(plugin_container).append(HTML_OperaBtn);
+				$(plugin_container).append(HTML_CMenu);
+				$(plugin_container).append(HTML_InputControls);
+				$(plugin_container).append(HTML_UploadBtn);
+				$(plugin_container).append(HTML_RS);
+
+						
+						
+				
+				
+				/***************************
+				 * 从这里开始绑定事件处理函数 **
+				 ***************************/
+				
+				
+				// 添加按钮，显示“单传或多传”选择菜单
+				$("#PhonePhotoUpload_OperaBtn_Add"+ i).bind("click",i,PhonePhotoUpload_AddBtn_Click);
+			
+				// 删除按钮,把图片舞台里的图片变成可点击删除状态
+				$("#PhonePhotoUpload_OperaBtn_Remove"+ i).bind("click",i,PhonePhotoUpload_OperaDelBtn_click);
+				
+				// 命令菜单自我隐藏
+				$("#PhonePhotoUpload_CMenu"+ i).bind("click",i,PhonePhotoUpload_CMenu_Click);
+				
+				
+				
+				// "从相册添加多张图片" 按钮点击
+				$("#PhonePhotoUpload_CMenu_multiple_btn"+ i).bind("click",i,function(e){
+					// 触发input multiple click 事件
+					$("#PhonePhotoUpload_InputControls_multiple_selector"+ i).click();
 				});
 				
+				// "拍照或添加单张图片" 按钮点击
+				$("#PhonePhotoUpload_CMenu_single_btn"+ i).bind("click",i,function(e){
+					// 触发input single click 事件
+					$("#PhonePhotoUpload_InputControls_single_selector"+ i).click();
+				});
 				
-				/**
-				 * 初始化全局变量
-				 */
-				var states = new Array(this.length);
+				// multiple input onchange事件
+				$("#PhonePhotoUpload_InputControls_multiple_selector"+ i).bind("change",i,multiple_selector_proccessor);
+				// single input onchange事件
+				$("#PhonePhotoUpload_InputControls_single_selector"+ i).bind("change",i,single_selector_proccessor);
 				
-				/**
-				 * 初始化界面
-				 */
-				var init = function(divs) {
-
-					divs.each(function(i) {
-						
-						states[i] = {
-							UploadSuccessed:false,
-							ProgressBarAnimationDone:false,
-							ProgressBarAnimationRuning:false
-							};
-						
-						var plugin_container = this;
-						
-						$(plugin_container).attr("id","PhonePhotoUpload"+i);
-						
-						$(plugin_container).css("background",defaults.ContentColor);
-
-						
-						// 初始化图片舞台
-						
-						var HTML_ImageStatus = '<div id="PhonePhotoUpload_stage'+ i + '" style=" overflow:hidden;"></div>';
-						
-						
-						// 初始化添加删除按钮
-						
-						var HTML_OperaBtn = '<div id="PhonePhotoUpload_OperaBtn'+ i + '" style="width:132px; height:64px; overflow:hidden;padding-bottom:2px;">' + 
-						                         '<div id="PhonePhotoUpload_OperaBtn_Add'+ i + '" style="height:60px;width:60px;float:left;margin:2px;border:1px solid '+defaults.BorderColor+';background:'+ defaults.ContentColor +';">'+
-							                         '<div style="height:30px;width:30px;float:left;margin:15px;background:'+ defaults.IconColor +';">'+
-							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';float:left;margin:0;"></div>'+
-							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;float:right;"></div>'+
-							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;float:left;margin-top:2px;"></div>'+
-							                         	'<div style="width:14px;height:14px;background:'+ defaults.ContentColor +';margin:0;margin-top:2px;float:right;"></div>'+
-							                         '</div>'+
-						                         '</div>'+
-						                         '<div id="PhonePhotoUpload_OperaBtn_Remove'+ i + '" style="height:60px;width:60px;display:none;margin:2px;border:1px solid '+defaults.BorderColor+';float:right;">'+
-							                         '<div style="height:30px;width:30px;margin:15px;">'+
-							                         	'<div style="height:2px;width:30px;background:'+defaults.IconColor+';margin-top:29px;"></div>'+
-							                         '</div>'+
-						                         '</div>'+
-						                    '</div>';
-						
-						// 初始化命令菜单
-						
-						var HTML_CMenu = '<div id="PhonePhotoUpload_CMenu'+ i + '" style="display:none;position:fixed;top:0;left:0;background:white;width:100%;height:100%;background: rgba(0, 0, 0, 0.6);text-align:center;">' + 
-						 				 		'<span id="PhonePhotoUpload_CMenu_multiple_btn' + i + '"  style="padding:0 5px;font-size:14px;border:none;background:white;line-height:35px;'+
-						 				 																		'border:1px solid #eee;margin:5px;display: inline-block;margin-top:100px;border-radius:2px;">从相册添加多张图片</span>'+
-						 				 		'<span id="PhonePhotoUpload_CMenu_single_btn'+ i + '"  style="padding:0 5px;font-size:14px;border:none;background:white;line-height:35px;'+
-						 				 																	 'border:1px solid #eee;margin:5px;display: inline-block;margin-top:100px;border-radius:2px;">拍照或添加单张图片</span>'+
-						                 '</div>';
-						
-						//初始化上传单张或多张图片按钮操作
-						
-						var HTML_InputControls = '<div id="PhonePhotoUpload_InputControls'+ i + '" style="display:none">'+
-														'<input type="file" multiple="multiple" id="PhonePhotoUpload_InputControls_multiple_selector'+ i+ '">'+
-														'<input type="file" id="PhonePhotoUpload_InputControls_single_selector'+ i + '">'+
-												 '</div>';
-						
-						//初始化上传按钮
-						
-						var HTML_UploadBtn = '<div id="PhonePhotoUpload_UploadBtn_wrap'+ i + '">'+
-						                          '<div id="PhonePhotoUpload_UploadBtn'+ i + '" style="margin-top:5px;padding:8px 0;width:100%;text-align:center;background:'+defaults.ButtonColor+';color:'+defaults.BtnFontColor+';border-radius:2px;">'+defaults.BtnText+'</div>'+
-											 '</div>';
-						
-						//初始化图片压缩操作
-						
-						var HTML_RS = '<div style="width:0px;height:0px;overflow:hidden;"><div id="PhonePhotoUpload_tmpImgs'+ i + '"></div><div id="PhonePhotoUpload_Canvases'+ i + '"></div><div id="PhonePhotoUpload_RS'+ i + '"></div></div>'
 				
-						//初始化正在上传提示
-						
-						var HTML_Upload_status='<div id="PhonePhotoUpload_Status'+i+'" style="display:none;position:fixed;background: rgba(0, 0, 0, 0.6);width:100%;text-align:center;font-weight:bold;color:white;"></div>';
-						
-						// 组装HTML
-
-						$(plugin_container).append(HTML_Upload_status);
-						$(plugin_container).append(HTML_ImageStatus);
-						$(plugin_container).append(HTML_OperaBtn);
-						$(plugin_container).append(HTML_CMenu);
-						$(plugin_container).append(HTML_InputControls);
-						$(plugin_container).append(HTML_UploadBtn);
-						$(plugin_container).append(HTML_RS);
-
-						
-						
-						/**
-						 * 绑定事件处理函数
-						 */
-						
-						//添加按钮
-						$("#PhonePhotoUpload_OperaBtn_Add"+ i).bind("click",i,function(e){
-							$("#PhonePhotoUpload_CMenu"+ i).css('display','block');
-							//阻止事件冒泡操作
-							e.stopPropagation();
-						});
-					
-						//删除按钮,把图片舞台里的图片变成可点击删除状态
-						$("#PhonePhotoUpload_OperaBtn_Remove"+ i).bind("click",i,PhonePhotoUpload_OperaDelBtn_click);
-						
-						//命令菜单自我隐藏
-						$("#PhonePhotoUpload_CMenu"+ i).bind("click",i,function(e){
-							$(this).css('display','none');
-							//阻止事件冒泡操作
-							e.stopPropagation();
-							
-						});
-						
-						// "从相册添加多张图片" 按钮点击
-						$("#PhonePhotoUpload_CMenu_multiple_btn"+ i).bind("click",i,function(e){
-							// 触发input multiple click 事件
-							$("#PhonePhotoUpload_InputControls_multiple_selector"+ i).click();
-						});
-						
-						// "拍照或添加单张图片" 按钮点击
-						$("#PhonePhotoUpload_CMenu_single_btn"+ i).bind("click",i,function(e){
-							// 触发input single click 事件
-							$("#PhonePhotoUpload_InputControls_single_selector"+ i).click();
-						});
-						
-						// multiple input onchange事件
-						$("#PhonePhotoUpload_InputControls_multiple_selector"+ i).bind("change",i,multiple_selector_proccessor);
-						// single input onchange事件
-						$("#PhonePhotoUpload_InputControls_single_selector"+ i).bind("change",i,single_selector_proccessor);
-						
-						//切换图片舞台为不可操作状态事件
-						$("#PhonePhotoUpload"+i).bind("click",i,PhonePhotoUpload__OperaDelBtn_hide);
-						
-						
-						// 点击上传按钮事件
-						$("#PhonePhotoUpload_UploadBtn"+ i).bind("click",i,PhonePhotoUpload_UploadBtn_limit);
-						
-					});
-				};
 				
-				/*
-				 * 点击上传处理函数
-				 */
-				var PhonePhotoUpload_UploadBtn_limit=function(e){
-					
-					//判断加减按钮是否显示，不显示则表示正在删除状态中，则不运行以下上传操作
-					if($('#PhonePhotoUpload_OperaBtn'+e.data).css("display")=="block"){
-						//弹出确认框，确认是否上传图片
+				//切换图片舞台为不可操作状态事件
+				$("#PhonePhotoUpload"+i).bind("click",i,PhonePhotoUpload_OperaDelBtn_hide);
+				
+				
+				// 点击上传按钮事件
+				$("#PhonePhotoUpload_UploadBtn"+ i).bind("click",i,PhonePhotoUpload_UploadBtn_limit);
 						
-						PhonePhotoUpload_Status_toggle(e.data,true);
+			});
+		};
+		
+		
+		
+		/***************************
+		 * 定义所有的事件处理函数     **
+		 ***************************/
+		
+		/**
+		 * 点击添加图片按钮
+		 */
+		var PhonePhotoUpload_AddBtn_Click=function(e){
+			
+			var plugin_container_index = e.data;
+			
+			$("#PhonePhotoUpload_CMenu"+ plugin_container_index).css('display','block');
+			//阻止事件冒泡操作
+			e.stopPropagation();
+			
+		};
+		
+		/*
+		 * 删除按钮点击事件处理器
+		 */
+		var PhonePhotoUpload_OperaDelBtn_click=function(e){
+			
+			// 把图片舞台切换为可操作状态
+			PhonePhotoUpload_ImageStatus_toggle(e.data,true);
+			 
+			// 隐藏命令菜单中的删除按钮
+			PhonePhotoUpload_OperaDelBtnStatus_toggle(e.data,false);
+			//阻止事件冒泡操作
+			e.stopPropagation();
+			
+		};
+		
+		/*
+		 * “单选 、多选” 菜单自我隐藏
+		 */
+		var PhonePhotoUpload_CMenu_Click=function(e){
+			
+			$(this).css('display','none');
+			//阻止事件冒泡操作
+			e.stopPropagation();
+			
+		};
+		
+		/**
+		 * 多张图片选择器处理函数
+		 */
+		var multiple_selector_proccessor = function(e) {
+
+			PhonePhotoUpload_selector_proccessor(this,e);
+			
+		};
+		
+		/**
+		 * 单张图片选择器处理函数
+		 */
+		var single_selector_proccessor = function(e) {
+			
+			PhonePhotoUpload_selector_proccessor(this,e);
+			 
+		};
+		
+		/*
+		 * 点击空白区域时 隐藏删除按钮
+		 */
+		var PhonePhotoUpload_OperaDelBtn_hide = function(e){
+			
+			var plugin_container_index = e.data;
+			
+			// 把图片舞台切换为不可操作状态
+			PhonePhotoUpload_ImageStatus_toggle(plugin_container_index,false);
+			
+			// 显示命令菜单中的删除按钮
+			PhonePhotoUpload_OperaDelBtnStatus_toggle(plugin_container_index,true);
+			
+		};
+		
+		/*
+		 * 点击上传按钮
+		 */
+		var PhonePhotoUpload_UploadBtn_limit=function(e){
+			
+			//判断加减按钮是否显示，不显示则表示正在删除状态中，则不运行以下上传操作
+			if($('#PhonePhotoUpload_OperaBtn'+e.data).css("display")=="block"){
+				//弹出确认框，确认是否上传图片
+				
+				PhonePhotoUpload_Status_toggle(e.data,true);
+				
+				var PhonePhotoUpload_confirm=confirm("是否上传所选图片!");
+				
+				if(PhonePhotoUpload_confirm==true){
+					//判断没图片的情况
+					if (PhonePhotoUpload_CheckImageCountOfStage(e.data) < 1){
+						alert("还没图片");
+						PhonePhotoUpload_Status_toggle(e.data,false);
+					//判断图片张数大于所限制张数的情况
+					}else if (PhonePhotoUpload_CheckImageCountOfStage(e.data) > defaults.PicCount){
+						alert('一次最多只能上传'+defaults.PicCount+'张图片');
+						PhonePhotoUpload_Status_toggle(e.data,false);
+					//有图片并且小于或等于所限制张数时，执行上传操作
+					}else{
 						
-						var PhonePhotoUpload_confirm=confirm("是否上传所选图片!");
-						
-						if(PhonePhotoUpload_confirm==true){
-							//判断没图片的情况
-							if (PhonePhotoUpload_CheckImageCountOfStage(e.data) < 1){
-								alert("还没图片");
-								PhonePhotoUpload_Status_toggle(e.data,false);
-							//判断图片张数大于所限制张数的情况
-							}else if (PhonePhotoUpload_CheckImageCountOfStage(e.data) > defaults.PicCount){
-								alert('一次最多只能上传'+defaults.PicCount+'张图片');
-								PhonePhotoUpload_Status_toggle(e.data,false);
-							//有图片并且小于或等于所限制张数时，执行上传操作
-							}else{
-								
-								// 压缩、上传图片
-								PhonePhotoUpload_UploadStageImages(e.data);
-							}
-						}else{
-							PhonePhotoUpload_Status_toggle(e.data,false);
-						}
+						// 压缩、上传图片
+						PhonePhotoUpload_UploadStageImages(e.data);
 					}
-					
+				}else{
+					PhonePhotoUpload_Status_toggle(e.data,false);
 				}
+			}
+			
+		}
+		
+		
+		
+		
+		/*********************
+		 * 工具类函数定义      *
+		**********************/
+		
+		// 获取URLObject对象！
+		var PhonePhotoUpload_getURLObject=function(){
+			
+			var URLObject = window.URL ? window.URL : window.webkitURL;
+			if (!URLObject) alert('你的浏览器不支持URLObject对象！');
+			else return URLObject;
+			
+		};
+		
+		// 添加图片到舞台
+		var PhonePhotoUpload_AppendPhotoToStage=function(file,plugin_container_index){
+			
+			var URLObject = PhonePhotoUpload_getURLObject();
+			var blob = (typeof file === 'string') ? file : URLObject.createObjectURL(file);
+			
+			var imgbox = '<div style="float:left;height:60px;width:60px;display:inline-block;margin:2px;border:1px solid '+defaults.BorderColor+';overflow:hidden;background:'+defaults.ContentColor+'">'+
+							'<img alt="'+file.name+'" src="'+blob+'">'+
+						 '</div>';
+			
+			$('#PhonePhotoUpload_stage'+plugin_container_index).append(imgbox);
+			$('#PhonePhotoUpload_stage'+plugin_container_index+' img').attr("style","height:auto;max-width:60px;");
+			
+		};
+		
+		// input file onchange事件处理器
+		var PhonePhotoUpload_selector_proccessor = function(inputElement,e) {
+			
+			var plugin_container_index = e.data;
+			
+			var fileList = inputElement.files;
+				
+			//生成浏览器临时图片  
+			for (var i = 0; i < fileList.length; i++) {
+				
+				var file =fileList[i];
+				
+				PhonePhotoUpload_AppendPhotoToStage(file,plugin_container_index); 
+			}
+
+			PhonePhotoUpload_OperaDelBtnStatus_toggle(plugin_container_index,true);
+			 
+		};
+		
+		// 检查舞台上已选择的图片数量
+		var PhonePhotoUpload_CheckImageCountOfStage = function (plug_index){
+			return $('#PhonePhotoUpload_stage'+plug_index+' img').length;
+		};		
+		
+		// 判断图片舞台上是否有图片，执行减号按钮的隐藏与显示
+		var PhonePhotoUpload_OperaDelBtnStatus_toggle=function(plug_index, tag){
+			if (tag){
+				if(PhonePhotoUpload_CheckImageCountOfStage(plug_index)>0){
+					$('#PhonePhotoUpload_OperaBtn_Remove'+plug_index).css("display","inline-block");
+				}else{
+					$('#PhonePhotoUpload_OperaBtn_Remove'+plug_index).css("display","none");
+				}
+			}else{
+				$('#PhonePhotoUpload_OperaBtn_Remove'+plug_index).css("display","none");
+			}
+
+		};
+		
+		// 切换图片舞台状态
+		var PhonePhotoUpload_ImageStatus_toggle = function( plug_index , tag ){
+			
+			if (tag){
+				
+				$('#PhonePhotoUpload_OperaBtn'+plug_index).css("display","none");
+				
+				
+				$('#PhonePhotoUpload_stage'+plug_index+' div').wrap('<div style="display:inline-block;margin:2px;" class="PhonePhotoUpload_stage_Img'+plug_index+'"></div>');
+				$('#PhonePhotoUpload_stage'+plug_index+' > div.PhonePhotoUpload_stage_Img'+plug_index+' div').before('<span style="color:white;background:red;float:right;position:relative;margin-left:-21px;z-index:1;font-size:15px;padding-right:1px;margin-top:-5px;height:15px;padding:3px 5px;">x</span>');
+				$('#PhonePhotoUpload_stage'+plug_index+' > div.PhonePhotoUpload_stage_Img'+plug_index+' div').css("display","block");
+				$('.PhonePhotoUpload_stage_Img'+plug_index).css("background","red");
+				$('.PhonePhotoUpload_stage_Img'+plug_index).css("overflow","hidden");
+				$('.PhonePhotoUpload_stage_Img'+plug_index+' img').css("border","none");
+				$('.PhonePhotoUpload_stage_Img'+plug_index+' img').css("height","auto");
+				$('.PhonePhotoUpload_stage_Img'+plug_index+' img').css("overflow","hidden");
+				
+				// 绑定点击事件，点击图片外层div可直接删除自己
+				$('#PhonePhotoUpload_stage'+plug_index+' > div.PhonePhotoUpload_stage_Img'+plug_index).bind('click',plug_index,function(e){
+					  $(this).remove();
+					  //图片删除到0张的时候显示添加按钮
+					  if(PhonePhotoUpload_CheckImageCountOfStage(plug_index)==0){
+						  $('#PhonePhotoUpload_OperaBtn'+plug_index).css("display","block");
+					  }
+					//阻止事件冒泡操作
+					  e.stopPropagation();
+				});
+				
+			}else{
+				
+				$('#PhonePhotoUpload_OperaBtn'+plug_index).css("display","block");
+				
+				
+				$('#PhonePhotoUpload_stage'+plug_index+' div').css("display","inline-block");
+				$('#PhonePhotoUpload_stage'+plug_index+' div').each(function(){
+					
+					$('#PhonePhotoUpload_stage'+plug_index).append(this);
+					
+				});
+				$('.PhonePhotoUpload_stage_Img'+plug_index).remove();
+
+			}
+
+		};
+		
+		
+		
+		
+		
+		
+	
 				
 				
 				/*
@@ -327,163 +528,14 @@ jQuery.fn.extend({
 				}
 				
 				
-				/**
-				 * 多张图片选择器处理函数
-				 */
-				var multiple_selector_proccessor = function(e) {
-				
-					  var fileList = this.files;
-					
-					 // var dd =document.getElementById('PhonePhotoUpload_stage'+e.data);
-						
-					//生成浏览器临时图片  
-					  for (var i = 0; i < fileList.length; i++) {
-						  var file =fileList[i]; 
 
-						  var URLObject = window.URL ? window.URL : window.webkitURL;
-						  
-						  if (!URLObject) alert('你的浏览器不支持！');
-						  
-						  var blob = (typeof file === 'string') ? file : URLObject.createObjectURL(file);
-						  
-						  var imgbox = '<div style="float:left;height:60px;width:60px;display:inline-block;margin:2px;border:1px solid '+defaults.BorderColor+';overflow:hidden;background:'+defaults.ContentColor+'">'+
-									  		'<img alt="'+file.name+'" src="'+blob+'">'+
-									   '</div>';
-						  
-						  $('#PhonePhotoUpload_stage'+e.data).append(imgbox);
-						  $('#PhonePhotoUpload_stage'+e.data+' img').attr("style","height:auto;max-width:60px;"); 
-					  }
-					  PhonePhotoUpload_OperaDelBtnStatus_toggle(e.data,true);
-				};
-				
-				/**
-				 * 单张图片选择器处理函数
-				 */
-				var single_selector_proccessor = function(e) {
-
-					 var fileList = this.files;
-						
-						//  var dd =document.getElementById('PhonePhotoUpload_stage'+e.data);
-							
-						//生成浏览器临时图片  
-						  for (var i = 0; i < fileList.length; i++) {
-							  var file =fileList[i]; 
-
-							  var URLObject = window.URL ? window.URL : window.webkitURL;
-							  
-							  if (!URLObject) alert('你的浏览器不支持！');
-							  
-							  var blob = (typeof file === 'string') ? file : URLObject.createObjectURL(file);
-							  
-							  var imgbox = '<div style="height:60px;width:60px;display:inline-block;margin:2px;border:1px solid '+defaults.BorderColor+';overflow:hidden;background:'+defaults.ContentColor+'">'+
-										  		'<img alt="'+file.name+'" src="'+blob+'">'+
-										   '</div>';
-							  
-							  $('#PhonePhotoUpload_stage'+e.data).append(imgbox);
-							  $('#PhonePhotoUpload_stage'+e.data+' img').attr("style","height:auto;max-width:60px;"); 
-						  }
-						  PhonePhotoUpload_OperaDelBtnStatus_toggle(e.data,true);
-					 
-				};
 				
 				
-				/*
-				 * 删除按钮点击事件处理器
-				 */
-				var PhonePhotoUpload_OperaDelBtn_click=function(e){
 
-					// 把图片舞台切换为可操作状态
-					PhonePhotoUpload_ImageStatus_toggle(e.data,true);
-					 
-					// 隐藏命令菜单中的删除按钮
-					PhonePhotoUpload_OperaDelBtnStatus_toggle(e.data,false);
-					//阻止事件冒泡操作
-					e.stopPropagation();
-					 
-
-				};
 				
-				/**
-				 * 删除按钮隐藏 事件处理器
-				 */
-				var PhonePhotoUpload__OperaDelBtn_hide = function(e){
-					
-					// 把图片舞台切换为可操作状态
-					PhonePhotoUpload_ImageStatus_toggle(e.data,false);
-					
-					// 显示命令菜单中的删除按钮
-					PhonePhotoUpload_OperaDelBtnStatus_toggle(e.data,true);
-					
-				};
+
 				
 				
-				// 切换图片舞台状态
-				var PhonePhotoUpload_ImageStatus_toggle = function( plug_index , tag ){
-					if (tag){
-						
-						$('#PhonePhotoUpload_OperaBtn'+plug_index).css("display","none");
-						
-						
-						$('#PhonePhotoUpload_stage'+plug_index+' div').wrap('<div style="display:inline-block;margin:2px;" class="PhonePhotoUpload_stage_Img'+plug_index+'"></div>');
-						$('#PhonePhotoUpload_stage'+plug_index+' > div.PhonePhotoUpload_stage_Img'+plug_index+' div').before('<span style="color:white;background:red;float:right;position:relative;margin-left:-21px;z-index:1;font-size:15px;padding-right:1px;margin-top:-5px;height:15px;padding:3px 5px;">x</span>');
-						$('#PhonePhotoUpload_stage'+plug_index+' > div.PhonePhotoUpload_stage_Img'+plug_index+' div').css("display","block");
-						$('.PhonePhotoUpload_stage_Img'+plug_index).css("background","red");
-						$('.PhonePhotoUpload_stage_Img'+plug_index).css("overflow","hidden");
-						$('.PhonePhotoUpload_stage_Img'+plug_index+' img').css("border","none");
-						$('.PhonePhotoUpload_stage_Img'+plug_index+' img').css("height","auto");
-						$('.PhonePhotoUpload_stage_Img'+plug_index+' img').css("overflow","hidden");
-						
-						// 绑定点击事件，点击图片外层div可直接删除自己
-						$('#PhonePhotoUpload_stage'+plug_index+' > div.PhonePhotoUpload_stage_Img'+plug_index).bind('click',plug_index,function(e){
-							  $(this).remove();
-							  //图片删除到0张的时候显示添加按钮
-							  if(PhonePhotoUpload_CheckImageCountOfStage(plug_index)==0){
-								  $('#PhonePhotoUpload_OperaBtn'+plug_index).css("display","block");
-							  }
-							//阻止事件冒泡操作
-							  e.stopPropagation();
-						});
-						
-					}else{
-						
-						$('#PhonePhotoUpload_OperaBtn'+plug_index).css("display","block");
-						
-						
-						$('#PhonePhotoUpload_stage'+plug_index+' div').css("display","inline-block");
-						$('#PhonePhotoUpload_stage'+plug_index+' div').each(function(){
-							
-							$('#PhonePhotoUpload_stage'+plug_index).append(this);
-							
-						});
-						$('.PhonePhotoUpload_stage_Img'+plug_index).remove();
-						
-
-
-					}
-
-					
-					
-				};
-				
-				/*
-				 * 判断图片舞台上是否有图片，执行减号按钮的隐藏与显示
-				 */
-				var PhonePhotoUpload_OperaDelBtnStatus_toggle=function(plug_index, tag){
-					if (tag){
-						if(PhonePhotoUpload_CheckImageCountOfStage(plug_index)>0){
-							$('#PhonePhotoUpload_OperaBtn_Remove'+plug_index).css("display","inline-block");
-						}else{
-							$('#PhonePhotoUpload_OperaBtn_Remove'+plug_index).css("display","none");
-						}
-					}else{
-						$('#PhonePhotoUpload_OperaBtn_Remove'+plug_index).css("display","none");
-					}
-
-				};
-				
-				var PhonePhotoUpload_CheckImageCountOfStage = function (plug_index){
-					return $('#PhonePhotoUpload_stage'+plug_index+' img').length;
-				};
 				
 				
 				// 压缩、上传图片
@@ -512,6 +564,7 @@ jQuery.fn.extend({
 						});
 
 					});
+					
 					//上传
 					var upload_fun = function(){
 						
