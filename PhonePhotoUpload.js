@@ -12,13 +12,49 @@ jQuery.fn.extend({
 						BtnText:"上传已选择的文件",//设置上传按钮的文字
 						ImgSize:'300',//设置图片压缩后的宽度
 						PicCount:'9',//设置上传图片的限制数量
+						GetUrls:null, // 设置上传完成后要处理已上传图片URLs的函数
 				};
 				
 				//页面传值，覆盖默认值
 				$.each(config,function(k,v){
 					if (v != undefined){
-						eval('defaults.'+k+'="'+v+'";');
-					}
+						
+							switch(k){
+								case 'remoteUrl':
+									defaults.remoteUrl = v;
+									break;
+								case 'redirectUrl':
+									defaults.redirectUrl = v;
+									break;
+								case 'ContentColor':
+									defaults.ContentColor = v;
+									break;
+								case 'IconColor':
+									defaults.IconColor = v;
+									break;
+								case 'BorderColor':
+									defaults.BorderColor = v;
+									break;
+								case 'ButtonColor':
+									defaults.ButtonColor = v;
+									break;
+								case 'BtnFontColor':
+									defaults.BtnFontColor = v;
+									break;
+								case 'BtnText':
+									defaults.BtnText = v;
+									break;
+								case 'ImgSize':
+									defaults.ImgSize = v;
+									break;
+								case 'PicCount':
+									defaults.PicCount = v;
+									break;
+								case 'GetUrls':
+									defaults.GetUrls = v;
+									break;
+							}
+						}
 				});
 				
 				
@@ -506,6 +542,11 @@ jQuery.fn.extend({
 											
 											//隐藏上传显示框
 											PhonePhotoUpload_Status_toggle(plug_index,false);
+											
+											//把数据传给回调函数
+											if (defaults.GetUrls) {
+												defaults.GetUrls(data.urls);
+											}
 											
 											//页面跳转
 											location.href=defaults.redirectUrl;
