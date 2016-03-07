@@ -15,6 +15,7 @@ jQuery.fn.extend({
 				ImgSize:'300',//设置图片压缩后的宽度
 				PicCount:'9',//设置上传图片的限制数量
 				GetUrls:null, // 设置上传完成后要处理已上传图片URLs的函数
+				Weixin:null, //微信jssdk已配置对象
 		};
 				
 		//页面传值，覆盖默认值
@@ -55,6 +56,9 @@ jQuery.fn.extend({
 						break;
 					case 'GetUrls':
 						defaults.GetUrls = v;
+						break;
+					case 'Weixin':
+						defaults.Weixin = v;
 						break;
 				}
 			}
@@ -212,7 +216,41 @@ jQuery.fn.extend({
 			
 			var plugin_container_index = e.data;
 			
-			$("#PhonePhotoUpload_CMenu"+ plugin_container_index).css('display','block');
+			var isWeiXin = function (){
+			    var ua = window.navigator.userAgent.toLowerCase();
+			    if(ua.match(/MicroMessenger/i) == 'micromessenger'){
+			        return true;
+			    }else{
+			        return false;
+			    }
+			}
+			
+			// 如果有微信组件可以用，那么则直接调用微信组件，不再显示菜单
+			if (defaults.Weixin && isWeiXin()) {
+				console.log('微信组件可用');
+
+				wx.chooseImage({
+				    count:defaults.PicCount, // 默认9
+				    sizeType: ['original', 'compressed'], // 可以指定是原图还是压缩图，默认二者都有
+				    sourceType: ['album', 'camera'], // 可以指定来源是相册还是相机，默认二者都有
+				    success: function (res) {
+				       alert(res); // 返回选定照片的本地ID列表，localId可以作为img标签的src属性显示图片
+				       PhonePhotoUpload_AppendPhotoToStage(res.localIds,plugin_container_index,true);
+				       $.each(res,function(k,v){
+				    	   alert(k+':'+v);
+				       });
+				    },
+				    fail:function(){
+				    	alert('hehe');
+				    }
+				});
+				
+			} else {
+				console.log('微信组件不可用');
+				$("#PhonePhotoUpload_CMenu"+ plugin_container_index).css('display','block');
+			}
+			
+			
 			//阻止事件冒泡操作
 			e.stopPropagation();
 			
@@ -286,24 +324,23 @@ jQuery.fn.extend({
 			if($('#PhonePhotoUpload_OperaBtn'+e.data).css("display")=="block"){
 				//弹出确认框，确认是否上传图片
 				
-				PhonePhotoUpload_Status_toggle(e.data,true);
 				
-				var PhonePhotoUpload_confirm=confirm("是否上传所选图片!");
+				
+				var PhonePhotoUpload_confirm=window.confirm("是否上传所选图片!");
+				
 				
 				if(PhonePhotoUpload_confirm==true){
 					//判断没图片的情况
 					if (PhonePhotoUpload_CheckImageCountOfStage(e.data) < 1){
 						alert("还没图片");
-						PhonePhotoUpload_Status_toggle(e.data,false);
 					//判断图片张数大于所限制张数的情况
 					}else if (PhonePhotoUpload_CheckImageCountOfStage(e.data) > defaults.PicCount){
 						alert('一次最多只能上传'+defaults.PicCount+'张图片');
-						PhonePhotoUpload_Status_toggle(e.data,false);
 					//有图片并且小于或等于所限制张数时，执行上传操作
 					}else{
-						
+						PhonePhotoUpload_Status_toggle(e.data,true); console.log(123);
 						// 压缩、上传图片
-						PhonePhotoUpload_UploadStageImages(e.data);
+						PhonePhotoUpload_UploadStageImages(e.data);console.log(456);
 					}
 				}else{
 					PhonePhotoUpload_Status_toggle(e.data,false);
@@ -329,17 +366,30 @@ jQuery.fn.extend({
 		};
 		
 		// 添加图片到舞台
-		var PhonePhotoUpload_AppendPhotoToStage=function(file,plugin_container_index){
+		var PhonePhotoUpload_AppendPhotoToStage=function(file,plugin_container_index,is_weixin){
+
+			var make_imgbox = function(img_alt,img_src){
+				return '<div style="float:left;height:60px;width:60px;display:inline-block;margin:2px;border:1px solid '+defaults.BorderColor+';overflow:hidden;background:'+defaults.ContentColor+'">'+
+								'<img alt="'+img_alt+'" src="'+img_src+'">'+
+							 '</div>';
+			};
 			
-			var URLObject = PhonePhotoUpload_getURLObject();
-			var blob = (typeof file === 'string') ? file : URLObject.createObjectURL(file);
+			var append_html = '';
 			
-			var imgbox = '<div style="float:left;height:60px;width:60px;display:inline-block;margin:2px;border:1px solid '+defaults.BorderColor+';overflow:hidden;background:'+defaults.ContentColor+'">'+
-							'<img alt="'+file.name+'" src="'+blob+'">'+
-						 '</div>';
+			if (is_weixin) {
+				$.each(file,function(data_index){
+					append_html += make_imgbox(this,this);
+				});
+			}else{
+				var URLObject = PhonePhotoUpload_getURLObject();
+				var name = file.name;
+				var src = (typeof file === 'string') ? file : URLObject.createObjectURL(file);
+				append_html = make_imgbox(name,src);
+			}
 			
-			$('#PhonePhotoUpload_stage'+plugin_container_index).append(imgbox);
-			$('#PhonePhotoUpload_stage'+plugin_container_index+' img').attr("style","height:auto;max-width:60px;");
+			
+			$('#PhonePhotoUpload_stage'+plugin_container_index).append(append_html);
+			$('#PhonePhotoUpload_stage'+plugin_container_index+' img').css({'height':'auto','max-width':'60px'});
 			
 		};
 		
@@ -547,21 +597,28 @@ jQuery.fn.extend({
 						
 						$("#PhonePhotoUpload_tmpImgs"+plug_index+"_img"+i).bind('load',function(){
 							
+							
 							$("#PhonePhotoUpload_Canvases"+plug_index).append('<canvas id="PhonePhotoUpload_Canvases'+plug_index+'_canvas'+i+'" width="'+$(this).width()+'" height="'+$(this).height()+'"></canvas>');
 							var myCanvas = $("#PhonePhotoUpload_Canvases"+plug_index+"_canvas"+i).get(0);
 					        var ctx = myCanvas.getContext("2d");
-					        
 
 					        ctx.drawImage(this,0,0,myCanvas.width,myCanvas.height);
+					        var imageData = null;
+					        try{
+					        	imageData = myCanvas.toDataURL("image/png");
+					        }catch(e){
+					        	alert(e);
+					        }
 					        
-					        var imageData = myCanvas.toDataURL("image/png");
 					        $("#PhonePhotoUpload_RS"+plug_index).append('<img src="'+imageData+'">');
 					        
 					        if ($("#PhonePhotoUpload_RS"+plug_index+" img").length == $('#PhonePhotoUpload_stage'+plug_index+' img').length){
+					        	
 					        	upload_fun();
 					        }
 							
 						});
+
 
 					});
 					
@@ -599,10 +656,12 @@ jQuery.fn.extend({
 											//把数据传给回调函数
 											if (defaults.GetUrls) {
 												defaults.GetUrls(data.urls);
+											}else{
+												//页面跳转
+												location.href=defaults.redirectUrl;
 											}
 											
-											//页面跳转
-											location.href=defaults.redirectUrl;
+											
 											
 										}
 									};
